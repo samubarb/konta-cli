@@ -1,0 +1,136 @@
+#!/usr/bin/env python3
+# Kontability CLI
+
+import sys
+import os
+import json
+from pathlib import Path
+from enum import Enum
+
+filename = 'members.json'
+foldername = 'konta-cli'
+
+home = Path.home()
+members_path = os.path.join(str(home), foldername, filename)
+
+
+
+class Member():
+    def __init__(self, name, surname, debt=0, id=0):
+        self.name = name
+        self.surname = surname
+        self.debt = debt
+
+    def getId(self):
+        return int(self.id)
+
+    def getName(self):
+        return str(self.name)
+
+    def getSurname(self):
+        return str(self.surname)
+
+    def getDebt(self):
+        return float(self.debt)
+
+    def getIntDebt(self):
+        return int(self.debt)
+
+    def setId(self, id):
+        self.id = id
+
+    def payBill(self, amount):
+        self.debt -= float(amount)
+
+    def show(self, member):
+        print(member.id)
+        print(member.getName(), member.getSurname())
+        print(member.debt())
+        print()
+
+    def toDict(self):
+        return { \
+                'id'      : self.getId(), \
+                'name'    : self.getName(), \
+                'surname' : self.getSurname(), \
+                'debt'    : self.getDebt() \
+                }
+
+
+class MemberList():
+    def __init__(self):
+        self.list = []
+
+    def add(self, member):
+        length = len(self.list)
+        member.setId(length + 1)
+        self.list.append(member)
+
+    def getList(self):
+        return self.list
+
+    def showList(self):
+        for member in self.list:
+            member.printMember()
+
+    def delete(self, name, surname=None):
+        candidates = []
+        for member in self.list:
+            flag = False
+            if surname != None:
+                if member.getSurname().lower() != surname.lower():
+                    continue
+
+            if member.getName().lower() == name.lower():
+                candidates.append(member)
+
+        if len(candidates) == 1: # Delete it, only one found
+            self.list.remove(candidates[0])
+            self.resetIds
+        else:
+            pass # TODO : implementation
+
+    def resetIds(self):
+        i = 1
+        for member in self.list:
+            member.setId(i)
+            i += 1
+
+    def toDict(self):
+        dictionary = {}
+        for member in self.list:
+            dictionary.append(member.toDict())
+
+    def store(self, filemanager):
+        filemanager.writeJSON(self)
+
+    def load(self, filemanager):
+        dict_list = filemanager.loadJSON()
+        for d in dict_list:
+            member = Member(**d)
+            self.list.append(member)
+
+class FileManager():
+    dict_mask = { \
+                'id'      : None, \
+                'name'    : None, \
+                'surname' : None, \
+                'debt'    : None \
+                }
+
+    def __init__(self, file_path):
+        self.file_path = str(file_path)
+
+    def writeJSON(self, member_list):
+        with open(self.file_path, 'w+') as write_file:
+            json.dump([obj.toDict() for obj in member_list], write_file)
+
+    def loadJSON(self):
+        try: 
+            with open(self.file_path, 'r') as read_file:
+                dicttionary = json.load(readfile)
+                return dicttionary
+        except FileNotFoundError:
+            return []
+
+
